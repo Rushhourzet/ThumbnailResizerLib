@@ -33,11 +33,7 @@ namespace ThumbnailResizerLib
             using (var image = new MagickImage(originalImage))
             {
                 image.CropToAspectRatioCentered(newWidth, newHeight);
-
-                //geometry.Greater = true; //Only Shrink Flag (">"): https://imagemagick.org/Usage/resize/#shrink
-                var geometry = new MagickGeometry(newWidth, newHeight);
-                geometry.IgnoreAspectRatio = true; //in case it needs to enlarge
-                image.Resize(geometry);
+                image.ResizeImage(newWidth, newHeight);
 
                 using (var memoryStream = new MemoryStream())
                 {
@@ -45,6 +41,15 @@ namespace ThumbnailResizerLib
                     return memoryStream.ToArray();
                 }
             }
+        }
+
+        private static MagickImage ResizeImage(this MagickImage image, int newWidth, int newHeight)
+        {
+            //geometry.Greater = true; //Only Shrink Flag (">"): https://imagemagick.org/Usage/resize/#shrink
+            var geometry = new MagickGeometry(newWidth, newHeight);
+            geometry.IgnoreAspectRatio = true; //in case it needs to enlarge
+            image.Resize(geometry);
+            return image;
         }
 
         private static MagickImage CropToAspectRatioCentered(this MagickImage image, int width, int height)

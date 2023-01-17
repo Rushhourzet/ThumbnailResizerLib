@@ -14,9 +14,10 @@
 //  under the License.
 
 using ImageMagick;
+using System.Runtime.CompilerServices;
 
 namespace ThumbnailResizerLib
-{   
+{
     public static class ImageResizer
     {
         /// <summary>
@@ -28,13 +29,13 @@ namespace ThumbnailResizerLib
         /// <returns>cropped and resized image as byte[]</returns>
         /// <exception cref="MagickException"></exception>
         public static byte[] CropAndResizeImage(this byte[] originalImage, int newWidth, int newHeight)
-        {            
+        {
             using (var image = new MagickImage(originalImage))
             {
-                var geometry = new MagickGeometry(newWidth, newHeight);
+                image.CropToAspectRatioCentered(newWidth, newHeight);
 
-                image.Crop(geometry,Gravity.Center);
                 //geometry.Greater = true; //Only Shrink Flag (">"): https://imagemagick.org/Usage/resize/#shrink
+                var geometry = new MagickGeometry(newWidth, newHeight);
                 geometry.IgnoreAspectRatio = true; //in case it needs to enlarge
                 image.Resize(geometry);
 
@@ -44,6 +45,28 @@ namespace ThumbnailResizerLib
                     return memoryStream.ToArray();
                 }
             }
+        }
+
+        private static MagickImage CropToAspectRatioCentered(this MagickImage image, int width, int height)
+        {
+            var currentAspectRatio = (double)image.Width / image.Height;
+            var desiredAspectRatio = (double)width / height;
+
+            if (currentAspectRatio > desiredAspectRatio)
+            {
+                // Crop the width to match the desired aspect ratio
+                var newWidth = (int)(image.Height * desiredAspectRatio);
+                var x = (image.Width - newWidth) / 2;
+                image.Crop(new MagickGeometry(x, 0, newWidth, image.Height));
+            }
+            else if (currentAspectRatio < desiredAspectRatio)
+            {
+                // Crop the height to match the desired aspect ratio
+                var newHeight = (int)(image.Width / desiredAspectRatio);
+                var y = (image.Height - newHeight) / 2;
+                image.Crop(new MagickGeometry(0, y, image.Width, newHeight));
+            }
+            return image;
         }
     }
 }
